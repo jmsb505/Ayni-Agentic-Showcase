@@ -1,6 +1,6 @@
 # Ayni Agentic System
 
-An interview-focused view of the agent workflows and architecture built for Ayni. This repository is a separate project beside the private source checkout. It contains no CRM product or Ayni Core service.
+An interview-focused view of the agent workflows and architecture built for Ayni. This repository is a separate local project beside the private source checkout. It has no configured remote and contains no CRM product or Ayni Core service.
 
 ## What this repository contains
 
@@ -86,7 +86,7 @@ The [agent inventory](docs/agent-inventory.md) shows stage purpose and review bo
 - [Source snapshot](source/app/) — selected workflow, harness, provider, memory, Judge, and connector implementation files.
 - [Contracts and manifests](contracts/) — selected generic contracts and fixtures, plus agent-facing capsule examples.
 
-## Provenance and public-sharing status
+## Provenance and repository status
 
 This snapshot was curated from the Ayni working tree on 2026-10-04. It includes source edits that were uncommitted in the private checkout. It does not establish that those edits are hosted, enabled in a deployment, or accepted by an end-to-end quality evaluation. Organization and geography literals in copied source were generalized; the workflow structure and control logic were preserved except where those literal substitutions changed wording.
 

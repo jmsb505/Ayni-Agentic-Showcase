@@ -1,12 +1,12 @@
 # PLAN-001 — Separate agentic system showcase
 
-Status: Local snapshot complete; public publication pending
+Status: Local showcase complete; not published
 Created: 2026-10-04
 Last updated: 2026-10-04
 
 ## Objective
 
-Create a standalone public-facing Git repository beside the private Ayni source checkout. Copy only custom agent workflow and architecture material needed for an interview; leave the source repository unchanged.
+Create a standalone local Git repository beside the private Ayni source checkout. Copy only custom agent workflow and architecture material needed for an interview; leave the source repository unchanged.
 
 ## Scope and exclusions
 
@@ -28,7 +28,7 @@ Exclude the CRM product, Ayni Core runtime, persistent infrastructure adapters, 
 - [x] Parse copied Python files and JSON documents.
 - [x] Scan for known private organization/geography literals and common credential patterns; inspect the file inventory for CRM records and excluded application/runtime directories.
 - [x] Initialize a standalone local Git history; confirm the source checkout retains only its pre-existing worktree changes.
-- [x] Confirm no remote is configured while public publication is pending authentication.
+- [x] Confirm no remote is configured; preserve the decision to keep this repository local.
 
 ## Validation and evidence
 
@@ -44,4 +44,4 @@ Agent workflow modules depend on host services and application-owned types. The 
 
 ## Completion
 
-Local validation passed: 14 Python files parsed, 15 JSON files parsed, and the targeted privacy scan found no matches. Clean local commit: 82e2461. No remote is configured. Public creation and push are pending because GitHub CLI reports an invalid token for jmsb505.
+Local validation passed: 14 Python files parsed, 15 JSON files parsed, and the targeted privacy scan found no matches. Clean local commit: 82e2461. No remote is configured. The user chose to keep the repository local. No remote was created or pushed.
