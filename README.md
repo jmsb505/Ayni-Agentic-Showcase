@@ -1,93 +1,104 @@
 # Ayni Agentic System
 
-An interview-focused view of the agent workflows and architecture built for Ayni. This repository is a separate local project beside the private source checkout. It has no configured remote and contains no CRM product or Ayni Core service.
+Ayni is a modular system for running bounded, evidence-aware agent workflows. It turns a human-defined objective and approved context into structured work, checks the result, and routes it to the next stage, a person, or an explicitly approved action.
 
-## What this repository contains
+The system combines focused agent capabilities with a controlled workflow host. The host owns run identity and lifecycle, version selection, authorization, budgets, evidence, and recovery. Each capability owns a specific reasoning task and returns a typed result. A model can draft or assess that result; workflow code controls what happens next.
 
-- Custom workflow stages for market research, lead discovery, lead research, proposal drafting, and controlled outreach.
-- Structured-generation harnesses and the model-provider interface used by those stages.
-- The semantic, episodic, and procedural memory model with bounded retrieval.
-- The typed connector envelope, selected execution and Judge contracts, and capsule manifest examples.
-- Guides to ownership, interchangeability, review boundaries, and the source extraction limits.
+## What the system does
 
-The Python modules are a sanitized source snapshot. They are useful for code review and an interview walkthrough, but they do not form an installable application. Their original imports refer to host services and business types that are intentionally absent here. The [isolation audit](docs/isolation-audit.md) lists the exact gaps.
+The main workflow moves from research to reviewed action:
 
-## Is this isolation viable?
+1. Market research builds an operating-context profile and evidence-linked market findings.
+2. Lead discovery searches within a bounded scope, screens candidates, checks duplicates, and queues results for review.
+3. Lead research builds a cited profile of a retained candidate, including unknowns and risks.
+4. Proposal drafting creates a proposal and related outreach text from approved context.
+5. Controlled outreach sends only the exact recipient and content that were approved.
 
-Yes, as a focused interview and code-showcase repository. It is not yet a standalone agent runtime. The actual workflow services depend on Ayni Core for Run identity and evidence, bounded execution, model selection, capsule resolution, connector dispatch, and recovery. Some stages also use application-owned organization and lead types. Those dependencies are described, not copied. Removing them without replacing their typed interfaces would produce a misleading or nonfunctional extraction.
+A read-only workspace assistant can answer questions from supplied workspace context and run evidence. It does not advance workflows or mutate records.
 
-The next step toward a runnable project is to define neutral workflow input, evidence, and result contracts, then adapt the existing stages to injected ports. A local fixture host could run the stages without a CRM application or production platform service.
+Workflow stages are application-orchestrated. The selected agent handles its declared task and returns control to the workflow. LangGraph is used in one harness to compose a prompt; it does not choose an unrestricted chain of agents or actions.
 
-## How the system works
+## How a run works
 
-The workflow is a sequence of bounded capabilities. Application code decides which stage runs next; an LLM does not invent the workflow or gain authority from its output.
+An operator or application supplies the task and approved context. The host starts a run with a versioned capability, its pinned capsule and port contracts, and an execution budget.
 
-    Human task and approved context
-                |
-                v
-    Versioned agent capability
-                |
-                v
-    Workflow stage selects its declared harness
-                |
-                v
-    Harness builds a structured generation request
-                |
-                v
-    Connector calls the selected model capsule and port
-                |
-                v
-    Deterministic validation and, where required, Judge assessment
-                |
-         +------+------+
-         |             |
-         v             v
-    Next bounded   Human review or
-    workflow step  controlled action
+    Human goal + approved context
+                 ↓
+    Run orchestration: identity, versions, budget, evidence
+                 ↓
+    Versioned workflow capability
+          ┌──────┴─────────┐
+          ↓                ↓
+    Selected harness   Typed connector calls
+          ↓                ↓
+    Model provider     Search, knowledge, memory,
+          ↓            Judge, or action capability
+    Structured result        │
+          └────────┬─────────┘
+                   ↓
+    Deterministic checks and any required Judge or human review
+                   ↓
+    Next workflow stage, review queue, or approved action
+                   ↓
+    Run trace and outcome evidence
 
-The private host records Runs, versions, events, usage, errors, approvals, and recovery evidence. That operational service is not part of this repository. See the [architecture guide](docs/architecture.md).
+Each run records the versions and decisions that produced its result. For consequential effects, the receiver returns an effect receipt. An uncertain result is reconciled before a retry.
 
-## Harnesses and model providers
+## Capsules and interchangeable components
 
-An agent version names a harness and an output contract. The simple JSON harness serializes the request and schema into a constrained prompt. The LangGraph JSON harness uses a small graph to prepare the prompt. It is a prompt-preparation graph, not a multi-agent supervisor or swarm. Bounded JSON shares structured generation while the host runtime applies bounded validation and retry rules.
+A capsule is a versioned capability module with declared ports, dependencies, configuration, capabilities, and permissions. An agent composition pins the capsule and port contract versions it uses. The host resolves those pins and records the exact composition with each run.
 
-The provider interface separates generation requests from model implementations. The source checkout includes local Qwen, OpenAI-compatible chat, and first-party OpenAI Responses adapters. Deployment configuration chooses a provider and model profile, and the execution release records the resolved choice. Swapping a provider does not transfer workflow policy or Run authority to the model.
+Capsules are logical boundaries. The default deployment is a modular monolith: modules can run in one process, while a remote adapter can use the same connector contract when deployment needs it. The architecture does not require a separate service for every capability.
 
-## Capsules, connectors, and the Judge
+The shared connector envelope carries capsule and port identity, version, tenant and actor context, correlation and operation identity, effect class, and outcome. Each port defines its own typed payload and policy. The receiver enforces authorization; identity fields in a message provide context, not permission. Consequential success includes a provider receipt, and uncertain outcomes require reconciliation before retry.
 
-A capsule is a versioned capability module with declared ports, dependencies, configuration, and permissions. An agent composition pins the capsule and port versions it needs. Deployments resolve those references to exact installed versions. This is a modular-monolith design: capsules may run in one process or behind a remote transport, and the boundary does not require a microservice split.
+The design keeps several parts replaceable behind stable contracts:
 
-The connector envelope standardizes capsule identity, port version, tenant and actor context, correlation, operation identity, effect class, and outcome. Each port still owns its typed payload and policy. Actor fields are audit context, not proof of permission. A consequential success needs an effect receipt; an uncertain result must be reconciled before retry.
+- **Harness:** bounded JSON and simple JSON prepare structured generation requests. The LangGraph JSON harness uses a small graph to serialize context and compose the prompt.
+- **Model provider:** a common interface accepts prompts and operation metadata, then returns generated content and usage. Implementations include local Qwen, OpenAI-compatible chat, and OpenAI Responses. A deployment can select a local model or a hosted provider without moving workflow policy into the model.
+- **Judge:** a provider-neutral port returns typed semantic assessments, as a choice among labels, a score against ordered criteria, or a probability estimate for one condition. Workflow policy applies thresholds and decides when uncertainty needs a person.
+- **Tools and knowledge:** search, source collections, memory, and external actions have typed ports, so an implementation can change while its contract remains stable.
 
-The Judge is a provider-neutral semantic assessment port, not another workflow agent. Workflow code applies the declared threshold. Deterministic logic handles exact checks, authorization, eligibility, and idempotency. A person handles high-impact choices and unresolved uncertainty. A Judge result cannot approve a record or authorize an external effect by itself.
+A replacement keeps the same port meaning, declares its capsule version, and passes the workflow evaluation. A provider or harness change does not silently change a past run’s recorded composition.
 
-Selected schemas, contracts, fixtures, and manifests are under [contracts](contracts/) and [capsules](capsules/). The registry, deployment service, connector dispatch, and Core application are not included.
+## Three-tier memory
 
-## Three memory tiers
+The memory tiers answer three different questions: what is known, what happened, and how a task should be done.
 
-- **Semantic:** reviewed facts or assertions with sources, validity, deployment scope, and approval state.
-- **Episodic:** short summaries linked to prior agent Runs. They help recall prior work but do not replace Run event history or become trusted facts automatically.
-- **Procedural:** evidence-backed instructions or playbooks. A human must approve them before retrieval; agent-specific procedures stay scoped to that agent.
+| Tier | Stores | Why it is useful |
+| --- | --- | --- |
+| **Semantic** | Reviewed, source-linked facts with scope, validity, confidence, and revision | Carries current knowledge across runs without repeating discovery. Retrieval can filter out unapproved or outdated facts. |
+| **Episodic** | Short summaries linked to the run, capability, time, and source references | Helps a capability recall prior attempts and outcomes. The original run trace remains the record of what happened. |
+| **Procedural** | Evidence-backed instructions and playbooks, optionally scoped to one capability | Preserves approved methods so later runs can apply them consistently. |
 
-Knowledge collections hold source material for retrieval and citation. They are not a fourth memory tier. Run history and evidence are the operational record, not agent memory. Retrieved memory is context; it does not override instructions, count as public evidence, or grant authority. See the [memory guide](docs/memory-model.md).
+Separating these tiers keeps facts, experience, and instructions from being treated as the same kind of information. Retrieval is scoped and bounded so a prompt receives relevant context instead of an unrestricted history dump. Semantic facts and procedures require review before use; episodes can be requested explicitly and remain linked to their source run.
 
-## Agent stages
+Knowledge collections are source material for retrieval and citations, not a fourth memory tier. Run history is operational evidence, not memory. Retrieved memory supplies context; it does not prove a public claim or grant authority.
 
-The included reference path is market research, lead discovery, lead research, and proposal drafting. Controlled outreach is a separate effect boundary. Each stage has typed outputs and its own deterministic, Judge, and human decision points. The model proposes content; the workflow validates it and controls transitions. The copied capability catalog also defines a read-only workspace assistant and a legacy CRM company-description capability. Their CRM-backed context and product adapters are excluded.
+## A governed improvement loop
 
-The [agent inventory](docs/agent-inventory.md) shows stage purpose and review boundaries. CRM-record enrichment and CRM product capabilities are excluded because they belong to the removed business application.
+Ayni improves from run outcomes through evaluation and reviewed updates:
 
-## Repository map
+1. The host records inputs, evidence, resolved versions, decisions, usage, errors, and action receipts.
+2. Deterministic checks catch contract, citation, eligibility, and policy failures. Where a semantic assessment is needed, the Judge evaluates the declared question against bounded evidence.
+3. Run outcomes can inform episodic summaries and candidates for semantic facts or procedural memory. Owners review memory candidates before approval.
+4. Evaluations compare workflow results against defined quality criteria and regression cases.
+5. Improvements to instructions, thresholds, harnesses, provider bindings, and procedures are introduced as versioned changes and evaluated before promotion.
 
-- [Architecture](docs/architecture.md) — ownership, capsules, connectors, provider interchange, decisions, and one workflow pass.
-- [Agent inventory](docs/agent-inventory.md) — included workflow stages and their controls.
-- [Memory model](docs/memory-model.md) — the three tiers, retrieval scope, and trust boundaries.
-- [Isolation audit](docs/isolation-audit.md) — copied and excluded source, missing host interfaces, and the path to a runnable extraction.
-- [Source snapshot](source/app/) — selected workflow, harness, provider, memory, Judge, and connector implementation files.
-- [Contracts and manifests](contracts/) — selected generic contracts and fixtures, plus agent-facing capsule examples.
+This loop lets the system reuse reviewed knowledge and improve later versions based on measured outcomes. Changes remain traceable to their runs and versions. Generated text does not change permissions or workflow code as a side effect.
 
-## Provenance and repository status
+## Decision and action boundaries
 
-This snapshot was curated from the Ayni working tree on 2026-10-04. It includes source edits that were uncommitted in the private checkout. It does not establish that those edits are hosted, enabled in a deployment, or accepted by an end-to-end quality evaluation. Organization and geography literals in copied source were generalized; the workflow structure and control logic were preserved except where those literal substitutions changed wording.
+Deterministic code handles exact rules such as schema validity, citation membership, eligibility, authorization, deduplication, and idempotency. The Judge assesses questions that require semantic judgment, such as evidence support, fit, readiness, or quality. People review high-impact choices and authorize consequential actions when the workflow requires it.
 
-No CRM records, credentials, environment files, model weights, database content, private run traces, or the upstream CRM agent application are included. This repository has no license file. Add one if you intend to grant reuse rights.
+A Judge result is evidence for a workflow decision; it is not permission to approve a record or perform an external effect. The workflow applies its declared policy and records the decision. External effects use a separate action boundary with approval, receipt verification, and reconciliation for uncertain outcomes.
+
+## Project layout and scope
+
+This repository contains workflow capabilities, harness and provider implementations, memory and Judge logic, connector contracts, capsule manifests, and architecture guides. It is an architectural reference rather than a one-command standalone service. Execution relies on host services for run lifecycle, capsule resolution, persistence, authorization, budgets, evidence, recovery, and evaluation.
+
+- [Architecture](docs/architecture.md) — ownership, composition, connectors, providers, decisions, and a workflow pass.
+- [Agent inventory](docs/agent-inventory.md) — capability purposes and review boundaries.
+- [Memory model](docs/memory-model.md) — memory tiers, retrieval scope, and trust rules.
+- [Reference modules](source/app/) — workflow, harness, provider, memory, Judge, and connector code.
+- [Contracts and capsule manifests](contracts/) — schemas, port descriptions, fixtures, and versioned capability examples.
