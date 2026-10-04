@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ayni.dev/contracts/judge-evaluation-port.v1.schema.json",
+  "title": "Ayni Typed Judge Evaluation Port v1",
+  "description": "Provider-neutral request and result payloads for bounded typed judgments.",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/result" }
+  ],
+  "$defs": {
+    "questionId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "choiceQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions", "criteria"],
+      "properties": {
+        "type": { "const": "choice" },
+        "instructions": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "criteria": {
+          "type": "object",
+          "minProperties": 2,
+          "maxProperties": 64,
+          "propertyNames": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "additionalProperties": { "type": ["string", "null"], "maxLength": 1000 }
+        }
+      }
+    },
+    "scoreQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions", "criteria"],
+      "properties": {
+        "type": { "const": "score" },
+        "instructions": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "criteria": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+        }
+      }
+    },
+    "noulQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions"],
+      "properties": {
+        "type": { "const": "noul" },
+        "instructions": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "questions"],
+      "properties": {
+        "state": { "type": "object", "additionalProperties": true },
+        "questions": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 20,
+          "propertyNames": { "$ref": "#/$defs/questionId" },
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/$defs/choiceQuestion" },
+              { "$ref": "#/$defs/scoreQuestion" },
+              { "$ref": "#/$defs/noulQuestion" }
+            ]
+          }
+        }
+      }
+    },
+    "choiceAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "choice"],
+      "properties": {
+        "type": { "const": "choice" },
+        "choice": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "probabilities": {
+          "type": "object",
+          "maxProperties": 64,
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "scoreAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "score"],
+      "properties": {
+        "type": { "const": "score" },
+        "score": { "type": "number", "minimum": 0 },
+        "legend": {
+          "type": "object",
+          "maxProperties": 32,
+          "additionalProperties": { "type": "string", "maxLength": 1000 }
+        },
+        "probabilities": {
+          "type": "object",
+          "maxProperties": 32,
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "noulAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "noul"],
+      "properties": {
+        "type": { "const": "noul" },
+        "noul": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "usage": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_tokens": { "type": ["integer", "null"], "minimum": 0 },
+            "output_tokens": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model_id", "answers", "latency_ms"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "model_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "answers": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 20,
+          "propertyNames": { "$ref": "#/$defs/questionId" },
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/$defs/choiceAnswer" },
+              { "$ref": "#/$defs/scoreAnswer" },
+              { "$ref": "#/$defs/noulAnswer" }
+            ]
+          }
+        },
+        "usage": { "$ref": "#/$defs/usage" },
+        "latency_ms": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

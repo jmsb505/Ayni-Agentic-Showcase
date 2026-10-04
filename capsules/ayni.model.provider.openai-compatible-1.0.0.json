@@ -1,0 +1,21 @@
+{
+  "manifest_version": 1,
+  "capsule_id": "ayni.model.provider.openai-compatible",
+  "version": "1.0.0",
+  "kind": "model",
+  "owner": "platform/core",
+  "tenant_scope": "deployment",
+  "readiness": "dependency",
+  "capabilities": ["model.provider.openai-compatible"],
+  "required_capabilities": [],
+  "provided_ports": [
+    { "port_id": "model.provider.openaicompatible.generate", "contract_version": "1.0.0", "effect_classes": ["none"] }
+  ],
+  "required_ports": [],
+  "required_capsules": [
+    { "capsule_id": "ayni.core", "accepted_versions": ["1.0.0"] }
+  ],
+  "configuration_schema": { "type": "object", "properties": {}, "additionalProperties": false },
+  "permissions": ["model.generate"],
+  "required_permissions": ["model.generate"]
+}

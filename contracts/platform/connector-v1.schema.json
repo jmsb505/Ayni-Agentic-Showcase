@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ayni.local/contracts/platform/connector-v1.schema.json",
+  "title": "Ayni Capsule Connector v1",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "capsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+        },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "port": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "contract_version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$"
+        },
+        "contract_version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "tenant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant_id", "deployment_id"],
+      "properties": {
+        "tenant_id": { "$ref": "#/$defs/identifier" },
+        "deployment_id": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_id", "kind"],
+      "properties": {
+        "subject_id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["human", "agent", "service", "operator", "system"] },
+        "issuer": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "correlation_id"],
+      "properties": {
+        "tenant": { "$ref": "#/$defs/tenant" },
+        "actor": { "$ref": "#/$defs/actor" },
+        "correlation_id": { "$ref": "#/$defs/identifier" },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "deadline_at": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id"],
+      "properties": {
+        "operation_id": { "$ref": "#/$defs/identifier" },
+        "idempotency_key": { "$ref": "#/$defs/identifier" },
+        "attempt": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connector_version",
+        "message_id",
+        "source",
+        "target",
+        "port",
+        "context",
+        "operation",
+        "effect_class",
+        "payload"
+      ],
+      "properties": {
+        "connector_version": { "const": "connector.v1" },
+        "message_id": { "$ref": "#/$defs/identifier" },
+        "source": { "$ref": "#/$defs/capsule" },
+        "target": { "$ref": "#/$defs/capsule" },
+        "port": { "$ref": "#/$defs/port" },
+        "context": { "$ref": "#/$defs/context" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "effect_class": { "enum": ["none", "read", "consequential"] },
+        "payload": { "type": "object" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "effect_id", "operation_key", "observed_at"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/identifier" },
+        "effect_id": { "$ref": "#/$defs/identifier" },
+        "operation_key": { "$ref": "#/$defs/identifier" },
+        "resource_refs": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": { "$ref": "#/$defs/identifier" },
+              "id": { "$ref": "#/$defs/identifier" }
+            }
+          }
+        },
+        "observed_at": { "$ref": "#/$defs/dateTime" },
+        "evidence_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "category", "retryability"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "category": {
+          "enum": [
+            "invalid_request",
+            "unauthenticated",
+            "forbidden",
+            "not_found",
+            "conflict",
+            "rate_limited",
+            "deadline_exceeded",
+            "dependency_unavailable",
+            "outcome_unknown",
+            "internal"
+          ]
+        },
+        "retryability": { "enum": ["safe", "never", "reconcile_first"] },
+        "retry_after_ms": { "type": "integer", "minimum": 0 },
+        "reconciliation_ref": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connector_version",
+        "message_id",
+        "in_reply_to",
+        "correlation_id",
+        "source",
+        "target",
+        "port",
+        "effect_class",
+        "status"
+      ],
+      "properties": {
+        "connector_version": { "const": "connector.v1" },
+        "message_id": { "$ref": "#/$defs/identifier" },
+        "in_reply_to": { "$ref": "#/$defs/identifier" },
+        "correlation_id": { "$ref": "#/$defs/identifier" },
+        "source": { "$ref": "#/$defs/capsule" },
+        "target": { "$ref": "#/$defs/capsule" },
+        "port": { "$ref": "#/$defs/port" },
+        "effect_class": { "enum": ["none", "read", "consequential"] },
+        "status": { "enum": ["accepted", "succeeded", "failed", "uncertain"] },
+        "operation_ref": { "$ref": "#/$defs/identifier" },
+        "result": { "type": "object" },
+        "error": { "$ref": "#/$defs/error" },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "accepted" } } },
+          "then": {
+            "required": ["operation_ref"],
+            "not": { "anyOf": [{ "required": ["result"] }, { "required": ["error"] }, { "required": ["receipt"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "succeeded" } } },
+          "then": {
+            "required": ["result"],
+            "not": { "anyOf": [{ "required": ["error"] }, { "required": ["operation_ref"] }] }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "succeeded" },
+              "effect_class": { "const": "consequential" }
+            },
+            "required": ["status", "effect_class"]
+          },
+          "then": { "required": ["receipt"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "succeeded" },
+              "effect_class": { "enum": ["none", "read"] }
+            },
+            "required": ["status", "effect_class"]
+          },
+          "then": { "not": { "required": ["receipt"] } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "failed" } } },
+          "then": {
+            "required": ["error"],
+            "not": {
+              "anyOf": [
+                { "required": ["result"] },
+                { "required": ["receipt"] },
+                { "required": ["operation_ref"] }
+              ]
+            },
+            "properties": {
+              "error": {
+                "not": { "properties": { "retryability": { "const": "reconcile_first" } } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "uncertain" } } },
+          "then": {
+            "required": ["error"],
+            "not": {
+              "anyOf": [
+                { "required": ["result"] },
+                { "required": ["receipt"] },
+                { "required": ["operation_ref"] }
+              ]
+            },
+            "properties": {
+              "error": {
+                "properties": {
+                  "retryability": { "const": "reconcile_first" },
+                  "category": { "const": "outcome_unknown" }
+                },
+                "required": ["reconciliation_ref"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

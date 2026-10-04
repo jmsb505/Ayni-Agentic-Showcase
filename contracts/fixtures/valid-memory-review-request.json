@@ -1,0 +1,21 @@
+{
+  "connector_version": "connector.v1",
+  "message_id": "msg-memory-review-001",
+  "source": { "id": "ayni.core", "version": "1.0.0" },
+  "target": { "id": "ayni.knowledge.memory", "version": "1.2.0" },
+  "port": { "name": "memory.review", "contract_version": "1.0.0" },
+  "context": {
+    "tenant": { "tenant_id": "deployment-a", "deployment_id": "deployment-a" },
+    "actor": { "subject_id": "operator-owner", "kind": "operator", "issuer": "ayni.core" },
+    "correlation_id": "corr-memory-review-001"
+  },
+  "operation": { "operation_id": "op-memory-review-001", "attempt": 1 },
+  "effect_class": "none",
+  "payload": {
+    "operation": "reject_semantic",
+    "arguments": {
+      "deployment_id": "deployment-a",
+      "memory_id": "59e31a2d-259f-42e5-aea8-dbb59cafb519"
+    }
+  }
+}

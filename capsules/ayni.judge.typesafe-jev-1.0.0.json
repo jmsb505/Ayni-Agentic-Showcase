@@ -1,0 +1,31 @@
+{
+  "manifest_version": 1,
+  "capsule_id": "ayni.judge.typesafe-jev",
+  "version": "1.0.0",
+  "kind": "capability",
+  "owner": "platform/core",
+  "tenant_scope": "tenant",
+  "readiness": "dependency",
+  "capabilities": ["judge.typed-evaluation"],
+  "required_capabilities": ["platform.tenant_scope"],
+  "provided_ports": [
+    { "port_id": "judge.evaluate", "contract_version": "1.0.0", "effect_classes": ["none"] }
+  ],
+  "port_permissions": { "judge.evaluate": ["judge.evaluate"] },
+  "required_ports": [
+    { "port_id": "platform.tenant.scope", "accepted_versions": ["1.0.0"] }
+  ],
+  "required_capsules": [
+    { "capsule_id": "ayni.core", "accepted_versions": ["1.0.0"] }
+  ],
+  "configuration_schema": {
+    "type": "object",
+    "properties": {
+      "model_id": { "type": "string", "minLength": 1, "maxLength": 200, "default": "jev-latest" },
+      "timeout_seconds": { "type": "number", "minimum": 1, "maximum": 120, "default": 15 }
+    },
+    "additionalProperties": false
+  },
+  "permissions": ["judge.evaluate"],
+  "required_permissions": []
+}

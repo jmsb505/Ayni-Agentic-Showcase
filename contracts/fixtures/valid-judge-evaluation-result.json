@@ -1,0 +1,31 @@
+{
+  "provider": "typesafe.jev",
+  "model_id": "jev-latest",
+  "answers": {
+    "review_route": {
+      "type": "choice",
+      "choice": "sales_review",
+      "probabilities": {
+        "sales_review": 0.74,
+        "needs_research": 0.23,
+        "no_fit": 0.03
+      },
+      "confidence": 0.61
+    },
+    "evidence_sufficient": { "type": "noul", "noul": 0.82 },
+    "fit_strength": {
+      "type": "score",
+      "score": 2.35,
+      "legend": {
+        "0": "No supported fit",
+        "1": "Weak signals",
+        "2": "Moderate fit",
+        "3": "Strong fit"
+      },
+      "probabilities": { "0": 0.01, "1": 0.12, "2": 0.65, "3": 0.22 },
+      "confidence": 0.69
+    }
+  },
+  "usage": { "input_tokens": 420, "output_tokens": 52 },
+  "latency_ms": 183.7
+}

@@ -1,0 +1,30 @@
+{
+  "state": {
+    "lead": {
+      "industry": "sample sector",
+      "evidence": [
+        { "source_id": "approved-memory-42", "claim": "The organization operates two sample sites." }
+      ]
+    }
+  },
+  "questions": {
+    "review_route": {
+      "type": "choice",
+      "instructions": "Choose the review queue supported by the supplied evidence.",
+      "criteria": {
+        "sales_review": "Evidence supports a potential fit; a human should review it.",
+        "needs_research": "The supplied evidence is not enough to route confidently.",
+        "no_fit": "The supplied evidence shows no relevant fit."
+      }
+    },
+    "evidence_sufficient": {
+      "type": "noul",
+      "instructions": "Does the supplied evidence directly support the proposed review route?"
+    },
+    "fit_strength": {
+      "type": "score",
+      "instructions": "Score the evidence-backed fit, without inferring missing facts.",
+      "criteria": ["No supported fit", "Weak signals", "Moderate fit", "Strong fit"]
+    }
+  }
+}

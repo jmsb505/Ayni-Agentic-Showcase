@@ -1,0 +1,23 @@
+{
+  "manifest_version": 1,
+  "capsule_id": "ayni.harness.bounded-json",
+  "version": "1.0.0",
+  "kind": "harness",
+  "owner": "platform/core",
+  "tenant_scope": "deployment",
+  "readiness": "process",
+  "capabilities": ["harness.reasoning"],
+  "required_capabilities": ["model.generation", "platform.run_context"],
+  "provided_ports": [{ "port_id": "harness.execute", "contract_version": "1.0.0", "effect_classes": ["none"] }],
+  "required_ports": [
+    { "port_id": "model.generate", "accepted_versions": ["1.0.0"] },
+    { "port_id": "platform.run.context", "accepted_versions": ["1.0.0"] }
+  ],
+  "required_capsules": [
+    { "capsule_id": "ayni.core", "accepted_versions": ["1.0.0"] },
+    { "capsule_id": "ayni.model.router", "accepted_versions": ["1.0.0"] }
+  ],
+  "configuration_schema": { "type": "object", "properties": {}, "additionalProperties": false },
+  "permissions": [],
+  "required_permissions": []
+}
